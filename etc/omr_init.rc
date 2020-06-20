@@ -1,0 +1,25 @@
+#
+# Oracle Multi-Run init file
+# --------------------------------------
+
+# Params
+ACCT=jgrover
+SFX=mathom42
+
+# Directories
+# OMR_HOME=/home/jgrover/omr
+
+OMR_BIN=$OMR_HOME/bin
+OMR_CFG=$OMR_HOME/etc
+OMR_LIB=$OMR_HOME/lib
+
+OMR_RUN=$OMR_HOME/run
+OMR_LOG=$OMR_RUN/data
+OMR_DATA=$OMR_RUN/log
+
+# files
+OMR_LIST=$OMR_CFG/omr_dblist.dat
+
+export ACCT SFX OMR_HOME OMR_BIN OMR_CFG OMR_LIB OMR_RUN OMR_LOG OMR_DATA OMR_LIST
+
+# --------------------------------------

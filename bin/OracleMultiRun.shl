@@ -1,0 +1,177 @@
+#!/bin/bash
+# ------------------------------------------------------------------------------
+# File: OracleMultiRun.shl
+# Desc: run the script givien on the command line on all databases using the
+#       account and password root provided
+#
+# Audit Trail:
+# 05-Mar-2008 jgrover
+#  - Original Code
+#
+# 08-Jan-2009 jgrover
+#  - New password format
+#
+# 27-Feb-2009 jgrover
+#  - New name, New file locations. Use ~/bin ~/Administration/Oracle/sql ~/tmp
+#
+# 18-Jun-2009 jgrover
+#  - Moved to ~/app/omr
+#  - New init file
+#  - New display
+#
+# ------------------------------------------------------------------------------
+
+#
+# Verify environment
+# --------------------------------------
+if [ -z "$OMR_HOME" ]
+then
+  OMR_HOME=`pwd`/omr
+fi
+echo "Home ....... : $OMR_HOME"
+
+if [ -z "$OMR_CFG" ]
+then
+  OMR_CFG=$OMR_HOME/etc
+fi
+echo "Config ..... : $OMR_CFG"
+
+if [ ! -r $OMR_CFG/omr_init.rc ]
+then
+  echo "ERROR! Cannot read init file"
+  exit 9
+fi
+echo "Init ....... : $OMR_CFG/omr_init.rc"
+
+source $OMR_CFG/omr_init.rc
+
+if [ ! -r "$OMR_LIST" ]
+then
+  echo "ERROR! Cannot read database list ( $OMR_LIST )"
+  exit 9
+fi
+
+#
+# Always run from the same place
+# --------------------------------------
+if [ ! -d "$OMR_RUN" ]
+then
+  mkdir -P $OMR_RUN
+fi
+
+cd $OMR_RUN
+
+#
+# Make sure there is someplace to put output
+# --------------------------------------
+if [ ! -d "$OMR_DATA" ]
+then
+  mkdir -P $OMR_DATA
+fi
+
+if [ ! -d "$OMR_LOG" ]
+then
+  mkdir -P $OMR_LOG
+fi
+
+if [ -z "$ORACLE_SID" ]
+then
+	export ORACLE_SID=oemprod
+	export ORAENV_ASK=NO
+	. oraenv
+fi
+
+#
+# Parse command line
+# --------------------------------------
+if [ $# -lt 2 ]
+then
+  echo
+  echo "Usage ${0}: sql_file sql_target [auto|safe]"
+  exit 1
+else
+  SQL=${OMR_LIB}/$1
+  shift
+
+  TARGET=`echo $1 | tr [:lower:] [:upper:]`
+  shift
+fi
+
+case $1 in
+  A*|a*) 
+    MODE=auto ;;
+  *)     
+    MODE=safe ;;
+esac
+
+shift
+ARGS=$*
+
+if [ ! -f ${SQL} -a ! -f ${SQL}.sql ]
+then
+  echo "Missing SQL ${SQL}.sql"
+  exit 1
+fi
+
+#
+# Get busy here 
+# --------------------------------------
+clear
+echo "----------------------------------------"
+echo "--  O R A C L E   M U L T I   R U N   --"
+echo "----------------------------------------"
+echo " Start time ....... : " `date`
+echo " User ............. :  $ACCT"
+echo " Target ........... :  $TARGET"
+echo " Mode ............. :  $MODE"
+echo " SQL .............. :  $SQL"
+echo " ARGS ............. :  $ARGS"
+echo "----------------------------------------"
+echo
+echo "Database           Host          Mode   Status"
+echo "-----------------  ------------  -----  -------"
+
+LOGD=$OMR_LOG/`basename ${SQL}`_${$}
+mkdir $LOGD
+
+for X in `awk '/^[A-Z]/ {printf "NDP=%s;SVC=%s;SVR=%s;PFX=%s;LVL=%s;FAM=%s\n", $1, $2, $3, $4, $5, substr($1,1,3)}' $OMR_CFG/omr_dblist.dat`
+do
+  eval $X
+
+  if [ "$TARGET" = "ALL"  -o \
+       "$TARGET" = "$NDP" -o \
+       "$TARGET" = "$SVC" -o \
+       "$TARGET" = "$SVR" -o \
+       "$TARGET" = "$LVL" -o \
+       "$TARGET" = "$FAM" ]
+  then
+    printf "%-17s  %-12s  %-5s  " $SVC $SVR $MODE
+
+    PASS=${PFX}_${SFX}
+    LOGF=${LOGD}/${SVC}.log
+    echo "sqlplus -s -l ${ACCT}@${SVC} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1" >> /tmp/sql.log
+    echo ${PASS} | ( sqlplus -s -l ${ACCT}@${SVC} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1 )
+
+    if [ `grep "ORA-" ${LOGF} | wc -l` -gt 0 ]
+    then
+      echo "Error"
+      mv ${LOGF} ${LOGF}.err
+    else
+      echo "Complete"
+    fi
+  fi
+done
+
+#
+# Combine all log files into a single summary file
+# --------------------------------------
+cat ${LOGD}/*.log 2>/dev/null | grep -v "^$" > $OMR_LOG/`basename ${SQL}`.txt
+cat ${LOGD}/*.err 2>/dev/null | grep -v "^$" > $OMR_LOG/`basename ${SQL}`.err
+
+echo
+echo "----------------------------------------"
+echo " End time ......... : " `date`
+echo " Summary file ..... : " $OMR_LOG/`basename ${SQL}`.txt
+echo " Error log ........ : " $OMR_LOG/`basename ${SQL}`.err
+echo "----------------------------------------"
+

@@ -1,0 +1,29 @@
+#
+# NDP Name  service_name        server        sfx     Lvl
+#
+BNRDBA      dbadmin_bnrdba      racdba_p01    rdba    DBA
+BNRPROD     dbadmin_bnrprod     racprod_p01   rpod    PROD  
+BNRTEST     dbadmin_bnrtest     ractest_p01   rtst    TEST
+BNRDEV      dbadmin_bnrdev      racdev_p01    rdev    DEV 
+ODSPROD     dbadmin_odsprod     racprod_p01   rpod    PROD
+ODSTEST     dbadmin_odstest     ractest_p01   rtst    TEST
+ODSDEV      dbadmin_odsdev      racdev_p01    rdev    DEV 
+ADVPROD     dbadmin_advprod     racprod_p01   rpod    PROD
+ADVTEST     dbadmin_advtest     ractest_p01   rtst    TEST
+ADVDEV      dbadmin_advdev      racdev_p01    rdev    DEV 
+ADVUPGD     dbadmin_advupgd     racdev_p01    rdev    DEV 
+ANCLPROD    dbadmin_anclprod    racprod_p06   rpod    PROD
+ANCLPPRD    dbadmin_ancltest    ractest_p06   rtst    TEST
+ANCLDEV     dbadmin_ancldev     racdev_p06    rdev    DEV
+ASYTPROD    dbadmin_asytprod    racprod_p06   rpod    PROD
+ASYTPPRD    dbadmin_asyttest    ractest_p06   rtst    TEST
+ASYTDEV     dbadmin_asytdev     racdev_p06    rdev    DEV
+AYHRPROD    dbadmin_ayhrprod    racprod_p06   rpod    PROD
+AYHRPPRD    dbadmin_ayhrtest    ractest_p06   rtst    TEST
+INFSPROD    dbadmin_INFSPROD    racprod_p06   rpod    PROD
+INFSTEST    dbadmin_INFSTEST    ractest_p06   rtst    TEST
+INFSDEV     dbadmin_INFSDEV     racdev_p06    rdev    DEV
+TPPROD      dbadmin_tpprod      racprod_p06   rpod    PROD
+TPTEST      dbadmin_tptest      ractest_p06   rtst    TEST
+TPDEV       dbadmin_tpdev       racdev_p06    rdev    DEV
+#
