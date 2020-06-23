@@ -19,6 +19,11 @@
 #  - New init file
 #  - New display
 #
+# 22-Jun-2020 jgrover
+#  - created git repo
+#  - replace database list with LDAP query
+#  - implemeted password encryption via gpg
+#
 # ------------------------------------------------------------------------------
 
 #
@@ -26,7 +31,7 @@
 # --------------------------------------
 if [ -z "$OMR_HOME" ]
 then
-  OMR_HOME=`pwd`/omr
+  OMR_HOME="/home/jgrover/Projects/OracleMultiRun"
 fi
 echo "Home ....... : $OMR_HOME"
 
@@ -38,18 +43,12 @@ echo "Config ..... : $OMR_CFG"
 
 if [ ! -r $OMR_CFG/omr_init.rc ]
 then
-  echo "ERROR! Cannot read init file"
+  echo "ERROR! Cannot read init file $OMR_CFG/omr_init.rc"
   exit 9
 fi
 echo "Init ....... : $OMR_CFG/omr_init.rc"
 
 source $OMR_CFG/omr_init.rc
-
-if [ ! -r "$OMR_LIST" ]
-then
-  echo "ERROR! Cannot read database list ( $OMR_LIST )"
-  exit 9
-fi
 
 #
 # Always run from the same place
@@ -74,13 +73,6 @@ then
   mkdir -P $OMR_LOG
 fi
 
-if [ -z "$ORACLE_SID" ]
-then
-	export ORACLE_SID=oemprod
-	export ORAENV_ASK=NO
-	. oraenv
-fi
-
 #
 # Parse command line
 # --------------------------------------
@@ -93,14 +85,15 @@ else
   SQL=${OMR_LIB}/$1
   shift
 
-  TARGET=`echo $1 | tr [:lower:] [:upper:]`
+  #TARGET=`echo $1 | tr [:lower:] [:upper:]`
+  TARGET=$1
   shift
 fi
 
 case $1 in
-  A*|a*) 
+  A*|a*)
     MODE=auto ;;
-  *)     
+  *)
     MODE=safe ;;
 esac
 
@@ -109,12 +102,12 @@ ARGS=$*
 
 if [ ! -f ${SQL} -a ! -f ${SQL}.sql ]
 then
-  echo "Missing SQL ${SQL}.sql"
+  echo "Missing SQL ${SQL}"
   exit 1
 fi
 
 #
-# Get busy here 
+# Get busy here
 # --------------------------------------
 clear
 echo "----------------------------------------"
@@ -128,29 +121,31 @@ echo " SQL .............. :  $SQL"
 echo " ARGS ............. :  $ARGS"
 echo "----------------------------------------"
 echo
-echo "Database           Host          Mode   Status"
-echo "-----------------  ------------  -----  -------"
+echo "Database           Mode   Status"
+echo "-----------------  -----  -------"
 
 LOGD=$OMR_LOG/`basename ${SQL}`_${$}
 mkdir $LOGD
 
-for X in `awk '/^[A-Z]/ {printf "NDP=%s;SVC=%s;SVR=%s;PFX=%s;LVL=%s;FAM=%s\n", $1, $2, $3, $4, $5, substr($1,1,3)}' $OMR_CFG/omr_dblist.dat`
+for X in `gpg --output - --decrypt $ENCRYPTED_FILE | awk -F"," '{printf "SVC=%s;FAM=%s;PWD=%s\n", $1, $2, $3}'`
 do
   eval $X
 
   if [ "$TARGET" = "ALL"  -o \
-       "$TARGET" = "$NDP" -o \
        "$TARGET" = "$SVC" -o \
-       "$TARGET" = "$SVR" -o \
-       "$TARGET" = "$LVL" -o \
        "$TARGET" = "$FAM" ]
   then
-    printf "%-17s  %-12s  %-5s  " $SVC $SVR $MODE
+    printf "%-17s  %-5s  " $SVC $MODE
+    export OMR_LDAP_BASE="cn=${SVC},${OMR_LDAP_CONTEXT}"
 
-    PASS=${PFX}_${SFX}
+    CONNECT_STRING=`ldapsearch -x -LLL -o ldif-wrap=no \
+        -b $OMR_LDAP_BASE \
+        -H $OMR_LDAP_HOST \
+        objectclass=orclNetService | grep orclnetdescstring | cut -d" " -f2`
+
     LOGF=${LOGD}/${SVC}.log
-    echo "sqlplus -s -l ${ACCT}@${SVC} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1" >> /tmp/sql.log
-    echo ${PASS} | ( sqlplus -s -l ${ACCT}@${SVC} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1 )
+    echo "sqlplus -s -l ${ACCT}@${CONNECT_STRING} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1" #>> /tmp/sql.log
+    echo ${PWD} | ( sqlplus -s -l ${ACCT}@${CONNECT_STRING} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1 )
 
     if [ `grep "ORA-" ${LOGF} | wc -l` -gt 0 ]
     then
@@ -174,4 +169,3 @@ echo " End time ......... : " `date`
 echo " Summary file ..... : " $OMR_LOG/`basename ${SQL}`.txt
 echo " Error log ........ : " $OMR_LOG/`basename ${SQL}`.err
 echo "----------------------------------------"
-
