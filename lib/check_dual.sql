@@ -29,7 +29,7 @@ column  value           format a30
 --
 --
 --
-select name from v$database;
+select sysdate, name from v$database;
 
 exit;
 -- ---------------------------------------------------------------------

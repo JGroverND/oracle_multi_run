@@ -49,7 +49,7 @@ fi
 echo "Init ....... : $OMR_CFG/omr_init.rc"
 
 source $OMR_CFG/omr_init.rc
-/home/jgrover/Projects/OracleMultiRun/run/data/check_dual.err
+
 #
 # Always run from the same place
 # --------------------------------------
@@ -108,12 +108,15 @@ fi
 
 #
 # Get busy here
-# ------------------------------/home/jgrover/Projects/OracleMultiRun/run/data/check_dual.err--------
+# --------------------------------------
+MY_PID=${$}
+
 clear
 echo "----------------------------------------"
 echo "--  O R A C L E   M U L T I   R U N   --"
 echo "----------------------------------------"
 echo " Start time ....... : " `date`
+echo " Process ID ........:  $MY_PID"
 echo " User ............. :  $ACCT"
 echo " Target ........... :  $TARGET"
 echo " Mode ............. :  $MODE"
@@ -124,7 +127,7 @@ echo
 echo "Database           Mode   Status"
 echo "-----------------  -----  -------"
 
-LOGD=$OMR_LOG/`basename ${SQL}`_${$}
+LOGD=$OMR_LOG/`basename ${SQL}`_${MY_PID}
 mkdir $LOGD
 
 for X in `gpg --quiet --output - --decrypt $ENCRYPTED_FILE | awk -F"," '{printf "SVC=%s;FAM=%s;PWD=%s\n", $1, $2, $3}'`
@@ -135,7 +138,7 @@ do
        "$TARGET" = "$SVC" -o \
        "$TARGET" = "$FAM" ]
   then
-    printf "%-17s  %-5s  " $SVC $MODE
+    printf "%-17s  %-5s  " $SVC $MYPID $MODE
     export OMR_LDAP_BASE="cn=${SVC},${OMR_LDAP_CONTEXT}"
 
     CONNECT_STRING=`ldapsearch -x -LLL -o ldif-wrap=no \

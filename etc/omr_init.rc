@@ -4,17 +4,17 @@
 
 # Params
 ACCT=jgrover
-ENCRYPTED_FILE=~/dblist.txt.enc
+ENCRYPTED_FILE=~/dblist.txt.gpg
 # Directories
-OMR_HOME=/home/jgrover/Projects/OracleMultiRun
+OMR_HOME=/home/jgrover/Projects/oracle_multi_run
 
 OMR_BIN=$OMR_HOME/bin
 OMR_CFG=$OMR_HOME/etc
 OMR_LIB=$OMR_HOME/lib
 
 OMR_RUN=$OMR_HOME/run
-OMR_LOG=$OMR_RUN/data
-OMR_DATA=$OMR_RUN/log
+OMR_LOG=$OMR_RUN/log
+OMR_DATA=$OMR_RUN/data
 
 OMR_LDAP_HOST="ldap://oid1-prod.oit.nd.edu"
 OMR_LDAP_CONTEXT="cn=OracleContext,dc=oit,dc=nd,dc=edu"
