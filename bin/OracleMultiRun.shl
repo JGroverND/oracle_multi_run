@@ -23,6 +23,8 @@
 #  - created git repo
 #  - replace database list with LDAP query
 #  - implemeted password encryption via gpg
+#  - default OMR_HOME to current directory
+#  - added information to error log
 #
 # ------------------------------------------------------------------------------
 
@@ -31,7 +33,7 @@
 # --------------------------------------
 if [ -z "$OMR_HOME" ]
 then
-  OMR_HOME="/home/jgrover/Projects/OracleMultiRun"
+  OMR_HOME=`pwd`
 fi
 echo "Home ....... : $OMR_HOME"
 
@@ -76,6 +78,8 @@ fi
 #
 # Parse command line
 # --------------------------------------
+ARGS=$*
+
 if [ $# -lt 2 ]
 then
   echo
@@ -98,7 +102,6 @@ case $1 in
 esac
 
 shift
-ARGS=$*
 
 if [ ! -f ${SQL} -a ! -f ${SQL}.sql ]
 then
@@ -121,6 +124,7 @@ echo " User ............. :  $ACCT"
 echo " Target ........... :  $TARGET"
 echo " Mode ............. :  $MODE"
 echo " SQL .............. :  $SQL"
+echo " HOME ............. :  $OMR_HOME"
 echo " ARGS ............. :  $ARGS"
 echo "----------------------------------------"
 echo
@@ -135,6 +139,7 @@ do
   eval $X
 
   if [ "$TARGET" = "ALL"  -o \
+       "$TARGET" = "all"  -o \
        "$TARGET" = "$SVC" -o \
        "$TARGET" = "$FAM" ]
   then
@@ -147,13 +152,16 @@ do
         objectclass=orclNetService | grep orclnetdescstring | cut -d" " -f2`
 
     LOGF=${LOGD}/${SVC}.log
-    echo "sqlplus -s -l ${ACCT}@${CONNECT_STRING} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1" >> /tmp/sql.log
-    echo ${PWD} | ( sqlplus -s -l ${ACCT}@${CONNECT_STRING} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1 )
+    # echo "sqlplus -s -l ${ACCT}@${CONNECT_STRING} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1" >> /tmp/sql.log
+    echo ${PWD} | ( sqlplus -s -l ${ACCT}@${CONNECT_STRING} @"${SQL}.sql" ${MODE} ${ARGS} > ${LOGF} 2>&1 )
 
     if [ `grep "ORA-" ${LOGF} | wc -l` -gt 0 ]
     then
       echo "Error"
-      mv ${LOGF} ${LOGF}.err
+      echo "# -------- Error in ${SQL} for ${SVC}" > ${LOGF}.err
+      cat ${LOGF} >> ${LOGF}.err
+      echo "# --------"
+      rm ${LOGF}
     else
       echo "Complete"
     fi
