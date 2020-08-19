@@ -1,9 +1,9 @@
 -- ---------------------------------------------------------------------
--- File: check_template.sql
+-- File: check_dba_roles.sql
 -- Desc:
 --
 -- Audit Trail:
--- dd-mon-yyyy  John Grover
+-- 17-aug-2020  John Grover
 --  - Original Code
 -- ---------------------------------------------------------------------
 set pagesize 0
@@ -12,6 +12,7 @@ set trimout on
 set heading off
 set feedback off
 set serveroutput on
+set markup csv on
 --
 --
 --
@@ -29,8 +30,14 @@ column  value           format a30
 --
 --
 --
-
+  select name, username, granted_role, profile
+    from dba_users
+    join v$database on 1=1
+    join dba_role_privs on grantee = username
+   where granted_role in ('DBA', 'ND_DBA_S_ROLE')
+   order by granted_role, profile, username
+/
+--
+--
+--
 exit;
--- ---------------------------------------------------------------------
---                                             E N D   O F   S C R I P T
--- ---------------------------------------------------------------------

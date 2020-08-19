@@ -160,7 +160,7 @@ do
       echo "Error"
       echo "# -------- Error in ${SQL} for ${SVC}" > ${LOGF}.err
       cat ${LOGF} >> ${LOGF}.err
-      echo "# --------"
+      echo "#" >> ${LOGF}.err
       rm ${LOGF}
     else
       echo "Complete"
