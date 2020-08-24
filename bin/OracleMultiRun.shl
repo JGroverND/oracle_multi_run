@@ -134,7 +134,7 @@ echo "-----------------  -----  -------"
 LOGD=$OMR_LOG/`basename ${SQL}`_${MY_PID}
 mkdir $LOGD
 
-for X in `gpg --quiet --output - --decrypt $ENCRYPTED_FILE | awk -F"," '{printf "SVC=%s;FAM=%s;PWD=%s\n", $1, $2, $3}'`
+for X in `gpg --quiet --output - --decrypt $ENCRYPTED_FILE | grep -v "^#" | grep -v "^$" | awk -F"," '{printf "SVC=\"%s\";FAM=\"%s\";PWD=\"%s\"\n", $1, $2, $3}'`
 do
   eval $X
 
