@@ -1,9 +1,9 @@
 -- ---------------------------------------------------------------------
--- File: aud_direct_grants.sql
--- Desc: List non-dba roles granted to DBA Staff
+-- File: aud_empty_roles.sql
+-- Desc:
 --
 -- Audit Trail:
--- 21-aug-2020  John Grover
+-- 15-jan-2010  John Grover
 --  - Original Code
 -- ---------------------------------------------------------------------
 set autocommit off
@@ -17,7 +17,7 @@ set newpage none
 set pagesize 0
 set serveroutput on
 set showmode off
-set termout on
+set termout off
 set timing off
 set time off
 set trimspool on
@@ -39,24 +39,32 @@ column  privilege       format a22
 column  param           format a30
 column  value           format a30
 
--- -----------------------------------------------------------------------------
--- Only ADMIN (owner) accounts get direct (non-role) grants
--- -----------------------------------------------------------------------------
-select sysdate, name, username, profile, privilege, account_status
-  from dba_users
+--
+--
+--
+with
+all_privs as (
+select grantee, privilege
+  from dba_tab_privs
+union
+select grantee, privilege
+  from dba_col_privs
+union
+select grantee, privilege
+  from dba_sys_privs
+union
+select grantee, granted_role
+  from dba_role_privs
+)
+select sysdate
+      ,name
+      ,role
+  from dba_roles
   join v$database on 1=1
-  join dba_sys_privs on grantee = username
- where profile not like 'ND_SYS%'
-   and profile not like 'ND_OWN%'
-   and profile != 'DEFAULT'
-UNION
-select sysdate, name, username, profile, privilege || ' on ' || owner || '.' || table_name "privilege", account_status
-  from dba_users
-  join v$database on 1=1
-  join dba_tab_privs on grantee = username
- where profile not like 'ND_SYS%'
-   and profile not like 'ND_OWN%'
-   and profile != 'DEFAULT'
+  left outer join all_privs on all_privs.grantee = dba_roles.role
+ where role like 'ND%'
+   and all_privs.grantee is null
+ order by role
 ;
 
 exit ;

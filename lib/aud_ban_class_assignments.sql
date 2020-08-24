@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------
--- File: template_run.sql
+-- File: aud_ban_class_assignments.sql
 -- Desc:
 --
 -- Audit Trail:
@@ -42,7 +42,36 @@ column  value           format a30
 --
 --
 --
-
+with
+non_inb_users as (
+select username
+      ,profile
+  from dba_users
+ where profile != 'ND_USR_OPEN_INBUSER'
+   and profile != 'DEFAULT'
+   and profile not like '%BANNER'
+   and profile not like '%DEVELOPER'
+   and profile not like '%POWERUSER'
+   and profile not like '%DBA'
+   and profile not like '%QA'
+),
+banner_classes_assigned as (
+select c.gurucls_userid netid
+      ,c.gurucls_class_code banner_class
+  from bansecr.gurucls c
+ where c.gurucls_class_code not like 'NDFI%'
+   and c.gurucls_class_code != 'GGN_ALL_BUY_ND_ONLY_C'
+)
+select 'alter user ' || banner_classes_assigned.netid || ' profile ND_USR_OPEN_INBUSER;' "profile INB users"
+--      ,banner_classes_assigned.netid netid
+--      ,non_inb_users.profile
+--      ,banner_classes_assigned.banner_class
+  from banner_classes_assigned
+  join non_inb_users on (( non_inb_users.username = banner_classes_assigned.netid)
+                     and (banner_classes_assigned.banner_class = 'GGN_ALL_USERS_C'))
+ order by banner_classes_assigned.netid
+         ,banner_classes_assigned.banner_class
+;
 
 exit ;
 -- ---------------------------------------------------------------------

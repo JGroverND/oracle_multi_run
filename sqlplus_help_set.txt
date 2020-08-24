@@ -1,0 +1,65 @@
+
+APPI[NFO]{OFF|ON|text}                   
+ARRAY[SIZE] {15|n}                       
+AUTOP[RINT] {OFF|ON}                     
+AUTORECOVERY {OFF|ON}                    
+AUTOT[RACE] {OFF|ON|TRACE[ONLY]} [EXP[LAIN]] [STAT[ISTICS]]             
+AUTO[COMMIT] {OFF|ON|IMM[EDIATE]|n}      
+BLO[CKTERMINATOR] {.|c|ON|OFF}           
+CMDS[EP] {;|c|OFF|ON} 
+COLINVI[SIBLE] {OFF|ON}
+COLSEP {_|text}
+CON[CAT] {.|c|ON|OFF} 
+COPYC[OMMIT] {0|n}
+COPYTYPECHECK {ON|OFF}                   
+DEF[INE] {&|c|ON|OFF}                      
+DESCRIBE [DEPTH {1|n|ALL}] [LINENUM {OFF|ON}] [INDENT {OFF|ON}]          
+ECHO {OFF|ON}                            
+EDITF[ILE] file_name[.ext]                 
+EMB[EDDED] {OFF|ON}                      
+ERRORL[OGGING] {ON|OFF} [TABLE [schema.]tablename][TRUNCATE] [IDENTIFIER identifier] 
+ESCCHAR {@|?|%|$|OFF}                    
+ESC[APE] {\|c|OFF|ON}                    
+EXITC[OMMIT] {ON|OFF}                    
+FEED[BACK] {6|n|ON|OFF}                  
+FLAGGER {OFF|ENTRY|INTERMED[IATE]|FULL}  
+FLU[SH] {ON|OFF}                         
+HEADS[EP] {||c|ON|OFF}                   
+HEA[DING] {ON|OFF}                       
+INSTANCE [instance_path|LOCAL]           
+LIN[ESIZE] {80|n}                        
+LOBOF[FSET] {1|n}                        
+LOGSOURCE [pathname]                     
+LONG {80|n}                              
+LONGC[HUNKSIZE] {80|n}                     
+MARK[UP] HTML [OFF|ON] [HEAD text] [BODY text] [TABLE text] [ENTMAP {ON|OFF}] [SPOOL {OFF|ON}] [PRE[FORMAT] {OFF|ON}]
+NEWP[AGE] {1|n|NONE}
+NULL text
+NUMF[ORMAT] format
+NUM[WIDTH] {10|n}
+PAGES[IZE] {14|n}
+PAU[SE] {OFF|ON|text}
+RECSEP {WR[APPED]|EA[CH]|OFF}
+RECSEPCHAR {_|c}
+SERVEROUT[PUT] {ON|OFF} [SIZE {n | UNLIMITED}] [FOR[MAT]  {WRA[PPED] | WOR[D_WRAPPED] | TRU[NCATED]}]
+SHIFT[INOUT] {VIS[IBLE] | INV[ISIBLE]}
+SHOW[MODE] {OFF|ON}
+SQLBL[ANKLINES] {OFF|ON}
+SQLCO[NTINUE] {> | text}
+SQLC[ASE] {MIX[ED] |LO[WER] | UP[PER]}
+SQLN[UMBER] {ON|OFF}
+SQLPLUSCOMPAT[IBILITY] {x.y[.z]}
+SQLPRE[FIX] {#|c}
+SQLP[ROMPT] {SQL>|text}
+SQLT[ERMINATOR] {;|c|ON|OFF}
+SUF[FIX] {SQL|text}
+TAB {ON|OFF}
+TERM[OUT] {ON|OFF}
+TIMI[NG] {OFF|ON}
+TI[ME] {OFF|ON}
+TRIMS[POOL] {OFF|ON}
+TRIM[OUT] {ON|OFF}
+UND[ERLINE] {-|c|ON|OFF}
+VER[IFY] {ON|OFF}
+WRA[P] {ON|OFF}
+XQUERY {BASEURI text|ORDERING{UNORDERED|ORDERED|DEFAULT}|NODE{BYVALUE|BYREFERENCE|DEFAULT}|CONTEXT text}

@@ -1,9 +1,9 @@
 -- ---------------------------------------------------------------------
--- File: aud_direct_grants.sql
--- Desc: List non-dba roles granted to DBA Staff
+-- File: aud_ban_inbusers.sql
+-- Desc:
 --
 -- Audit Trail:
--- 21-aug-2020  John Grover
+-- 15-jan-2010  John Grover
 --  - Original Code
 -- ---------------------------------------------------------------------
 set autocommit off
@@ -12,12 +12,12 @@ set echo off
 set feedback off
 set heading off
 set linesize 120
-set markup csv on
+set markup CSV on
 set newpage none
 set pagesize 0
 set serveroutput on
 set showmode off
-set termout on
+set termout off
 set timing off
 set time off
 set trimspool on
@@ -39,24 +39,33 @@ column  privilege       format a22
 column  param           format a30
 column  value           format a30
 
--- -----------------------------------------------------------------------------
--- Only ADMIN (owner) accounts get direct (non-role) grants
--- -----------------------------------------------------------------------------
-select sysdate, name, username, profile, privilege, account_status
+--
+--
+--
+with
+inb_users as (
+select username
+      ,account_status
   from dba_users
+ where profile = 'ND_USR_OPEN_INBUSER'
+),
+banner_classes_assigned as (
+select c.gurucls_userid netid
+      ,c.gurucls_class_code banner_class
+ from bansecr.gurucls c
+)
+select sysdate
+      ,name
+      ,inb_users.username
+      ,inb_users.account_status
+      ,coalesce(banner_classes_assigned.banner_class, 'no classes assigned') banner_class
+  from inb_users
   join v$database on 1=1
-  join dba_sys_privs on grantee = username
- where profile not like 'ND_SYS%'
-   and profile not like 'ND_OWN%'
-   and profile != 'DEFAULT'
-UNION
-select sysdate, name, username, profile, privilege || ' on ' || owner || '.' || table_name "privilege", account_status
-  from dba_users
-  join v$database on 1=1
-  join dba_tab_privs on grantee = username
- where profile not like 'ND_SYS%'
-   and profile not like 'ND_OWN%'
-   and profile != 'DEFAULT'
+  left outer join banner_classes_assigned on banner_classes_assigned.netid = inb_users.username
+ where banner_classes_assigned.banner_class is null
+    or inb_users.account_status != 'OPEN'
+ order by inb_users.username
+      ,coalesce(banner_classes_assigned.banner_class, 'no classes assigned')
 ;
 
 exit ;
