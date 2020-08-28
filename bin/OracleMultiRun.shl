@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------------
 # File: OracleMultiRun.shl
 # Desc: run the script givien on the command line on all databases using the
@@ -26,6 +26,10 @@
 #  - default OMR_HOME to current directory
 #  - added information to error log
 #
+# 25-aug-2020 jgrover
+#  - refactored variable names
+#  - new directory structure
+#
 # ------------------------------------------------------------------------------
 
 #
@@ -35,50 +39,29 @@ if [ -z "$OMR_HOME" ]
 then
   OMR_HOME=`pwd`
 fi
-echo "Home ....... : $OMR_HOME"
 
 if [ -z "$OMR_CFG" ]
 then
   OMR_CFG=$OMR_HOME/etc
 fi
-echo "Config ..... : $OMR_CFG"
 
 if [ ! -r $OMR_CFG/omr_init.rc ]
 then
   echo "ERROR! Cannot read init file $OMR_CFG/omr_init.rc"
   exit 9
+else
+  source $OMR_CFG/omr_init.rc
 fi
-echo "Init ....... : $OMR_CFG/omr_init.rc"
-
-source $OMR_CFG/omr_init.rc
 
 #
-# Always run from the same place
+# Always run from OMR_HOME directory
 # --------------------------------------
-if [ ! -d "$OMR_RUN" ]
-then
-  mkdir -P $OMR_RUN
-fi
-
-cd $OMR_RUN
-
-#
-# Make sure there is someplace to put output
-# --------------------------------------
-if [ ! -d "$OMR_DATA" ]
-then
-  mkdir -P $OMR_DATA
-fi
-
-if [ ! -d "$OMR_LOG" ]
-then
-  mkdir -P $OMR_LOG
-fi
+cd $OMR_HOME
 
 #
 # Parse command line
 # --------------------------------------
-ARGS=$*
+OMR_ARGS=$*
 
 if [ $# -lt 2 ]
 then
@@ -86,81 +69,85 @@ then
   echo "Usage ${0}: sql_file sql_target [auto|safe]"
   exit 1
 else
-  SQL=${OMR_LIB}/$1
-  shift
-
-  #TARGET=`echo $1 | tr [:lower:] [:upper:]`
-  TARGET=$1
-  shift
+  OMR_SQL=${OMR_LIB}/${1}
+  OMR_TGT=${2}
 fi
 
-case $1 in
+case ${3} in
   A*|a*)
-    MODE=auto ;;
+    OMR_MODE="auto" ;;
   *)
-    MODE=safe ;;
+    OMR_MODE="safe" ;;
 esac
 
-shift
-
-if [ ! -f ${SQL} -a ! -f ${SQL}.sql ]
+if [ ! -f ${OMR_SQL} ]
 then
-  echo "Missing SQL ${SQL}"
-  exit 1
+    if [ ! -f ${OMR_SQL}.sql ]
+    then
+        echo "Missing SQL ${OMR_SQL}"
+        exit 1
+    else
+        OMR_SQL=${OMR_SQL}.sql
+    fi
 fi
 
 #
 # Get busy here
 # --------------------------------------
-MY_PID=${$}
+OMR_OUTPUT_DIR=${OMR_DATA}/`basename -s .sql ${OMR_SQL}`/${$}
+OMR_DISPLAY_DIR="data/`basename -s .sql ${OMR_SQL}`/${$}"
+mkdir --parents $OMR_OUTPUT_DIR
 
 clear
 echo "----------------------------------------"
 echo "--  O R A C L E   M U L T I   R U N   --"
 echo "----------------------------------------"
-echo " Start time ....... : " `date`
-echo " Process ID ........:  $MY_PID"
-echo " User ............. :  $ACCT"
-echo " Target ........... :  $TARGET"
-echo " Mode ............. :  $MODE"
-echo " SQL .............. :  $SQL"
-echo " HOME ............. :  $OMR_HOME"
-echo " ARGS ............. :  $ARGS"
-echo "----------------------------------------"
+
+if [ ! -z "${DEBUG}" ]
+then
+  if [ "${DEBUG}" = "TRUE" ]
+  then
+    echo " Start time ....... : " `date`
+    env | grep "OMR" | sort | awk -F"=" '{printf "%20s is %s\n", $1, $2}'
+    echo "----------------------------------------"
+  fi
+fi
+
 echo
 echo "Database           Mode   Status"
 echo "-----------------  -----  -------"
 
-LOGD=$OMR_LOG/`basename ${SQL}`_${MY_PID}
-mkdir $LOGD
-
-for X in `gpg --quiet --output - --decrypt $ENCRYPTED_FILE | grep -v "^#" | grep -v "^$" | awk -F"," '{printf "SVC=\"%s\";FAM=\"%s\";PWD=\"%s\"\n", $1, $2, $3}'`
+for X in `gpg --quiet --output - --decrypt $ENCRYPTED_FILE \
+          | grep -v "^#" \
+          | grep -v "^$" \
+          | awk -F"," '{printf "SVC=\"%s\";FAM=\"%s\";PWD=\"%s\"\n", $1, $2, $3}'`
 do
   eval $X
 
-  if [ "$TARGET" = "ALL"  -o \
-       "$TARGET" = "all"  -o \
-       "$TARGET" = "$SVC" -o \
-       "$TARGET" = "$FAM" ]
+  if [ "$OMR_TGT" = "ALL"  -o \
+       "$OMR_TGT" = "all"  -o \
+       "$OMR_TGT" = "$SVC" -o \
+       "$OMR_TGT" = "$FAM" ]
   then
-    printf "%-17s  %-5s  " $SVC $MYPID $MODE
-    export OMR_LDAP_BASE="cn=${SVC},${OMR_LDAP_CONTEXT}"
+    printf "%-17s  %-5s  " $SVC $OMR_MODE
+    OMR_LDAP_BASE="cn=${SVC},${OMR_LDAP_CONTEXT}"
 
     CONNECT_STRING=`ldapsearch -x -LLL -o ldif-wrap=no \
         -b $OMR_LDAP_BASE \
         -H $OMR_LDAP_HOST \
         objectclass=orclNetService | grep orclnetdescstring | cut -d" " -f2`
 
-    LOGF=${LOGD}/${SVC}.log
-    # echo "sqlplus -s -l ${ACCT}@${CONNECT_STRING} @${SQL} ${MODE} ${ARGS} > ${LOGF} 2>&1" >> /tmp/sql.log
-    echo ${PWD} | ( sqlplus -s -l ${ACCT}@${CONNECT_STRING} @"${SQL}.sql" ${MODE} ${ARGS} > ${LOGF} 2>&1 )
+    LOGF=${OMR_OUTPUT_DIR}/${SVC}.log
+    ERRF=${OMR_OUTPUT_DIR}/${SVC}.err
+
+    echo ${PWD} | ( sqlplus -s -l ${ACCT}@${CONNECT_STRING} @"${OMR_SQL}" ${OMR_MODE} ${OMR_ARGS} > ${LOGF} 2>&1 )
 
     if [ `grep "ORA-" ${LOGF} | wc -l` -gt 0 ]
     then
       echo "Error"
-      echo "# -------- Error in ${SQL} for ${SVC}" > ${LOGF}.err
-      cat ${LOGF} >> ${LOGF}.err
-      echo "#" >> ${LOGF}.err
+      echo "# -------- Error in ${SQL} for ${SVC}" > ${ERRF}
+      cat ${LOGF} >> ${ERRF}
+      echo "# --------" >> ${ERRF}
       rm ${LOGF}
     else
       echo "Complete"
@@ -171,12 +158,12 @@ done
 #
 # Combine all log files into a single summary file
 # --------------------------------------
-cat ${LOGD}/*.log 2>/dev/null | grep -v "^$" > $OMR_LOG/`basename ${SQL}`.txt
-cat ${LOGD}/*.err 2>/dev/null | grep -v "^$" > $OMR_LOG/`basename ${SQL}`.err
+cat ${OMR_OUTPUT_DIR}/*.log 2>/dev/null | grep -v "^$" > ${OMR_OUTPUT_DIR}/omr.dat
+cat ${OMR_OUTPUT_DIR}/*.err 2>/dev/null | grep -v "^$" > ${OMR_OUTPUT_DIR}/omr.msg
 
 echo
 echo "----------------------------------------"
 echo " End time ......... : " `date`
-echo " Summary file ..... : " $OMR_LOG/`basename ${SQL}`.txt
-echo " Error log ........ : " $OMR_LOG/`basename ${SQL}`.err
+echo " Output directory . : $OMR_DISPLAY_DIR"
+ls -lht $OMR_OUTPUT_DIR
 echo "----------------------------------------"

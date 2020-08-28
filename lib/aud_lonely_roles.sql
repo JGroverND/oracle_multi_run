@@ -17,7 +17,7 @@ set newpage none
 set pagesize 0
 set serveroutput on
 set showmode off
-set termout off
+set termout on
 set timing off
 set time off
 set trimspool on
