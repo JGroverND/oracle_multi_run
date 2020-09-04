@@ -12,20 +12,8 @@ set trimout on
 set heading off
 set feedback off
 set serveroutput on
-
---
---
---
-column  name            format a10
-column  database        format a10
-column  username        format a30
-column  grantee         format a30
-column  role            format a30
-column  granted_role    format a30
-column  profile         format a30
-column  privilege       format a22
-column  param           format a30
-column  value           format a30
+set timing off
+set verify off
 
 begin
   declare
@@ -38,153 +26,107 @@ begin
     v_name    varchar2(30)    := '' ;
     v_acct    varchar2(30)    := '' ;
 
-    cursor c1 is
-    select 'role' as op_type
-          ,granted_role as op_privilege
-          ,grantee as op_grantee
+    cursor c1 (p_netid sys.dba_users.username%type) is
+    select 'a. finance fobprof' as op_type
+          ,'delete from fimsmgr.fobprof where fobprof_user_id = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from fimsmgr.fobprof where fobprof_user_id = p_netid)
+    union
+    select 'b. finance forusfn' as op_type
+          ,'delete from fimsmgr.forusfn where forusfn_user_id_entered = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from fimsmgr.forusfn where forusfn_user_id_entered = p_netid)
+    union
+    select 'c. finance forusor' as op_type
+          ,'delete from fimsmgr.forusor where forusor_user_id_entered = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from fimsmgr.forusor where forusor_user_id_entered = p_netid)
+    union
+    select 'd. finance fzbzfop' as op_type
+          ,'delete from ndfiadmin.fzbzfop where fzbzfop_net_id = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from ndfiadmin.fzbzfop where fzbzfop_net_id = p_netid)
+    union
+    select 'e. finance zownfop' as op_type
+          ,'delete from ndfiadmin.zownfop where zownfop_net_id = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from ndfiadmin.zownfop where zownfop_net_id = p_netid)
+    union
+    select 'f. banner class' as op_type
+          ,'delete from bansecr.gurucls where gurucls_userid = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from bansecr.gurucls where gurucls_userid = p_netid)
+    union
+    select 'g. banner direct' as op_type
+          ,'delete from bansecr.guruobj where guruobj_userid = ''' || p_netid || '''' as op_sql
+      from dual
+     where exists (select 1 from bansecr.guruobj where guruobj_userid = p_netid)
+    union
+    select 'h. oracle role' as op_type
+          ,'revoke ' || granted_role || ' from ' || grantee as op_sql
       from sys.dba_role_privs
-     where grantee = upper(&2)
-     union
-    select 'system' as op_type
-           ,PRIVILEGE as as op_privilege
-           || grantee as op_grantee
+     where grantee = p_netid
+    union
+    select 'i. oracle system' as op_type
+          ,'revoke ' || privilege || ' from ' || grantee as op_sql
       from sys.dba_sys_privs
-     where grantee = upper(&2)
+     where grantee = p_netid
     union
-    select 'table'
-          ,PRIVILEGE || on || OWNER || '.' || TABLE_NAME as op_privilege
-          ,grantee as op_grantee
+    select 'j. oracle table' as op_type
+          ,'revoke ' || privilege || ' on ' || owner || '.' || table_name || ' from ' || grantee as op_sql
       from sys.dba_tab_privs
-     where grantee = upper(&2)
+     where grantee = p_netid
     union
-    select 'column' as op_type
-          ,PRIVILEGE || ' on ' || OWNER || '.' ||  TABLE_NAME || '.' || COLUMN_NAME as op_privilege
-          ,grantee  as op_grantee
+    select 'k. oracle column' as op_type
+          ,'revoke ' || privilege || ' on ' || owner || '.' ||  table_name || '.' || column_name || ' from ' || grantee as op_sql
       from sys.dba_col_privs
-     where grantee = upper(&2);
+     where grantee = p_netid
+    union
+    select 'z. oracle user' as op_type
+          ,'drop user ' || p_netid || ' cascade' as op_sql
+      from dual
+     where exists (select 1 from dba_users where username = p_netid)
+     order by op_type
+;
+
 --
 --
 -- -------------------------------------
   begin
-    v_mode := lower('&1');
-    v_acct := upper('&2');
+    v_mode := lower('&1'); -- auto, safe (safe is default)
+    v_acct := upper('&2'); -- NetID
     dbms_output.enable(null);
 
     begin
 
 -- header row for documentation
-    select name into v_name from v$database ;
-    select count(*) into v_enum from dba_users where username = v_acct ;
-
+      select name into v_name from v$database ;
+      select count(*) into v_enum from dba_users where username = v_acct ;
 
 -- create the script
-    if (v_enum > 0)
-    then
       v_sql(nvl(v_sql.last, 0)+1) := '-- Decommissioning ' || v_acct || ' in ' || v_name ;
 
-      if (v_name like 'BNR%')
-      then
-        v_sql(nvl(v_sql.last, 0)+1) := 'alter user ' || v_acct || ' identified by values ''!'' account lock password expire' ;
+      for r1 in c1(v_acct) loop
+        v_sql(nvl(v_sql.last, 0)+1) := r1.op_sql;
 
-      else
-        v_sql(nvl(v_sql.last, 0)+1) := 'drop user ' || v_acct || ' cascade ' ;
-
-      end if ;
-
-    else
-      v_sql(nvl(v_sql.last, 0)+1) := '-- No account ' || v_acct || ' in ' || v_name ;
-
-    end if ;
+      end loop;
 
 -- execute and/or write the script
-    for v_idx in v_sql.first .. v_sql.last loop
-      if  v_mode = 'auto'
-      and v_sql.exists(v_idx)
-      and not regexp_like(v_sql(v_idx), '^--') then
-        execute immediate v_sql(v_idx) ;
-      end if ;
+      for v_idx in v_sql.first .. v_sql.last loop
+        -- if  v_mode = 'auto'
+        -- and v_sql.exists(v_idx)
+        -- and not regexp_like(v_sql(v_idx), '^--') then
+        --   execute immediate v_sql(v_idx) ;
+        -- end if ;
 
-      dbms_output.put_line( v_sql(v_idx) || ' ;' ) ;
-    end loop ;
+        dbms_output.put_line( v_sql(v_idx) || ' ;' ) ;
+      end loop ;
+    end;
   end ;
 end ;
-/
-
---
---
---
-
---
---
---
-end;
 /
 
 exit ;
 -- ---------------------------------------------------------------------
 --                                             E N D   O F   S C R I P T
 -- ---------------------------------------------------------------------
--- -------------------------------------
--- USER: Revoke all (Banner)
--- -------------------------------------
-
-
--- ----------------------------------------------------------
-select 'delete from fimsmgr.FOBPROF where FOBPROF_USER_ID = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-  where EXISTS (SELECT 1 from fimsmgr.FOBPROF where FOBPROF_USER_ID = upper(:NETID))
-union
--- ----------------------------------------------------------
-select 'delete from fimsmgr.FORUSFN where FORUSFN_USER_ID_ENTERED = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-  where EXISTS (SELECT 1 from fimsmgr.FORUSFN where FORUSFN_USER_ID_ENTERED = upper(:NETID))
-union
--- ----------------------------------------------------------
-select 'delete from fimsmgr.FORUSOR where FORUSOR_USER_ID_ENTERED = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-  where EXISTS (SELECT 1 from fimsmgr.FORUSOR where FORUSOR_USER_ID_ENTERED = upper(:NETID))
-union
--- ----------------------------------------------------------
-select 'delete from ndfiadmin.fzbzfop where FZBZFOP_NET_ID = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-  where EXISTS (SELECT 1 from ndfiadmin.fzbzfop where FZBZFOP_NET_ID = upper(:NETID))
-union
--- ----------------------------------------------------------
-select 'delete from ndfiadmin.zownfop where ZOWNFOP_NET_ID = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-  where EXISTS (SELECT 1 from ndfiadmin.zownfop where ZOWNFOP_NET_ID = upper(:NETID))
-union
--- ----------------------------------------------------------
-select 'delete from bansecr.gurucls where gurucls_userid = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-    where exists (select 1 from bansecr.gurucls where gurucls_userid=upper(:NETID))
-
-union
-select 'delete from bansecr.guruobj where guruobj_userid = '''
-       || upper(:NETID)
-       || ''';'
-  from dual
-    where exists (select 1 from bansecr.guruobj where guruobj_userid=upper(:NETID))
-union
-select 'drop user '
-       || upper(:NETID)
-       || 'cascade  ;'
-  from dual
-  where exists (select 1 from dba_users where username=upper(:NETID))
-union
-select 'commit;'
-from dual
- order by 1 desc
--- End

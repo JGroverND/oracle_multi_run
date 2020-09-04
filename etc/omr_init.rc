@@ -14,10 +14,10 @@ OMR_LIB=$OMR_HOME/lib
 OMR_DATA=$OMR_HOME/data
 
 # LDAP parameters
-OMR_LDAP_HOST="ldap://oid1-prod.oit.nd.edu"
+OMR_LDAP_HOST="ldap://oid-prod.oit.nd.edu"
 OMR_LDAP_CONTEXT="cn=OracleContext,dc=oit,dc=nd,dc=edu"
 
 # export ACCT ENCRYPTED_FILE
-# export OMR_HOME OMR_BIN OMR_CFG OMR_LIB OMR_DATA 
+# export OMR_HOME OMR_BIN OMR_CFG OMR_LIB OMR_DATA
 # export OMR_LDAP_HOST OMR_LDAP_BASE OMR_LDAP_CONTEXT
 # --------------------------------------

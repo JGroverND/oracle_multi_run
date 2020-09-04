@@ -78,10 +78,12 @@ select distinct grantee acct
 -- MAIN query body
 -- =============================================================================
 select d.name database
+      ,sysdate run_time
       ,dba_users.username username
       ,to_char(dba_users.created, 'YYYY-MM-DD HH:mm') created
       ,to_char(dba_users.last_login, 'YYYY-MM-DD HH:mm') last_login
       ,nvl(round(sysdate - cast(dba_users.last_login as date),2), 0) days_ago
+      ,profile current_profile
       ,
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> --
 -- rule-base profile determination: copy me to the WHERE clause if you change me!
@@ -109,7 +111,6 @@ case when (sys_users.acct is not null)                  then 'ORACLE'    else --
 end end                                                                       --
 -- <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< --
        proposed_profile
-      ,profile current_profile
       ,decode(account_status, 'OPEN', 'OPEN', 'LOCK') account_status
       ,case when (sys_users.acct is null)       then null else 'Y' end sys
       ,case when (people.acct is null)          then null else 'Y' end usr

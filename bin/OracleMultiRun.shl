@@ -61,8 +61,6 @@ cd $OMR_HOME
 #
 # Parse command line
 # --------------------------------------
-OMR_ARGS=$*
-
 if [ $# -lt 2 ]
 then
   echo
@@ -71,14 +69,19 @@ then
 else
   OMR_SQL=${OMR_LIB}/${1}
   OMR_TGT=${2}
+  shift # shift off sql file arg
+  shift # shift off target arg
 fi
 
-case ${3} in
+case ${1} in
   A*|a*)
     OMR_MODE="auto" ;;
   *)
     OMR_MODE="safe" ;;
 esac
+shift # shift off mode arg
+
+OMR_ARGS=$* # keep the rest to pass to sqlplus
 
 if [ ! -f ${OMR_SQL} ]
 then
