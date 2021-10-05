@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------
--- File: check_dual.sql
+-- File: tmp_chk_old_accounts.sql
 -- Desc:
 --
 -- Audit Trail:
@@ -29,7 +29,21 @@ column  value           format a30
 --
 --
 --
-select sysdate, name from v$database;
+select to_char(sysdate, 'YYYY-MM-DD') || ', ' ||
+       d.name || ', ' ||
+       u.username || ', ' ||
+       u.profile || ', ' ||
+       to_char(u.created, 'YYYY-MM-DD') || ', ' ||
+       nvl(to_char(u.last_login, 'YYYY-MM-DD'), 'never') as DATA
+  from v$database d,
+       dba_users u
+ where u.username in ('ND_DBPROTECT_USER', 
+                      'ND_REPO_EXTRACT_USER', 
+                      'ND_SENTRIGO_USER',
+                      'NDREPOADMIN', 
+                      'ND_ORAPROBE_ADMIN')
+ order by u.username
+/
 
 exit;
 -- ---------------------------------------------------------------------

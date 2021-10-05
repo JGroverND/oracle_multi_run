@@ -1,0 +1,12 @@
+export SVC=$1
+
+export LDAP_HOST="ldap://oid1-prod.oit.nd.edu"
+export LDAP_CONTEXT="cn=OracleContext,dc=oit,dc=nd,dc=edu"
+export LDAP_BASE="cn=${SVC},${LDAP_CONTEXT}"
+
+CONNECT_STRING=`ldapsearch -x -LLL -o ldif-wrap=no \
+    -b $LDAP_BASE \
+    -H $LDAP_HOST \
+    objectclass=orclNetService  | grep orclnetdescstring | cut -d":" -f2`
+
+echo Connect String is $CONNECT_STRING

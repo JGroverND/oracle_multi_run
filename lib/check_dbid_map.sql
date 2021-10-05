@@ -1,38 +1,34 @@
 -- ---------------------------------------------------------------------
--- File: check_dual.sql
+-- File: check_dbid_map.sql
 -- Desc:
 --
 -- Audit Trail:
--- dd-mon-yyyy  John Grover
+-- 20-aug-2020  John Grover
 --  - Original Code
 -- ---------------------------------------------------------------------
 set pagesize 0
 set linesize 300
 set trimout on
-set heading off
 set feedback off
 set serveroutput on
 --
 --
 --
-column  name            format a10
-column  database        format a10
-column  username        format a30
-column  grantee         format a30
-column  role            format a30
-column  granted_role    format a30
-column  profile         format a30
-column  privilege       format a22
-column  param           format a30
-column  value           format a30
+column  dbid            format 99999999999
+column  name            format a9
+column  database_role   format a16
+column  SQL_CMD         format a100
 
 --
---
---
-select sysdate, name from v$database;
+-- select dbid
+--       ,name
+--       ,database_role
+--  from v$database;
+
+select 'insert into syslog.dbid_map (database_id, database_name) values (' || dbid || ',''' || name || ''');' SQL_CMD from v$database
+/
 
 exit;
 -- ---------------------------------------------------------------------
 --                                             E N D   O F   S C R I P T
 -- ---------------------------------------------------------------------
-

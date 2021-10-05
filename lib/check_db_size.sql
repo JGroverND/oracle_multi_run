@@ -1,9 +1,9 @@
 -- ---------------------------------------------------------------------
--- File: check_dual.sql
+-- File: check_db_size.sql
 -- Desc:
 --
 -- Audit Trail:
--- dd-mon-yyyy  John Grover
+-- 05-18-2021 John Grover
 --  - Original Code
 -- ---------------------------------------------------------------------
 set pagesize 0
@@ -15,24 +15,22 @@ set serveroutput on
 --
 --
 --
-column  name            format a10
-column  database        format a10
-column  username        format a30
-column  grantee         format a30
-column  role            format a30
-column  granted_role    format a30
-column  profile         format a30
-column  privilege       format a22
-column  param           format a30
-column  value           format a30
-
+select name ||','||
+       Reserved_Gb ||','||
+       (Reserved_Gb - Free_Gb) ||','||
+       Free_Gb
+ from ( select
+         (select sum(bytes/(1024*1024*1024)) from dba_data_files) as Reserved_Gb,
+         (select sum(bytes/(1024*1024*1024)) from dba_free_space) as Free_Gb
+          from dual
+      )
+  join v$database on 1=1
+;
 --
 --
 --
-select sysdate, name from v$database;
 
 exit;
 -- ---------------------------------------------------------------------
 --                                             E N D   O F   S C R I P T
 -- ---------------------------------------------------------------------
-

@@ -1,9 +1,9 @@
 -- ---------------------------------------------------------------------
--- File: check_dual.sql
+-- File: check_audit_status.sql
 -- Desc:
 --
 -- Audit Trail:
--- dd-mon-yyyy  John Grover
+-- 09-OCT-2020  John Grover
 --  - Original Code
 -- ---------------------------------------------------------------------
 set pagesize 0
@@ -26,13 +26,18 @@ column  privilege       format a22
 column  param           format a30
 column  value           format a30
 
---
---
---
-select sysdate, name from v$database;
+select d.dbid, d.name, count(0)
+  from v$database d
+  left outer join sys.aud$ a on 1=1
+ group by d.dbid, d.name;
+
+SELECT d.dbid, d.name, p.name || ' =  ' || p.value "-- Check Param"
+  FROM v$parameter p
+  join v$database d on 1=1
+ WHERE p.NAME LIKE '%audit%'
+    OR p.NAME LIKE '%syslog%' ;
 
 exit;
 -- ---------------------------------------------------------------------
 --                                             E N D   O F   S C R I P T
 -- ---------------------------------------------------------------------
-

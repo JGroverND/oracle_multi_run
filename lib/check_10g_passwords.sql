@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------
--- File: check_dual.sql
+-- File: check_template.sql
 -- Desc:
 --
 -- Audit Trail:
@@ -29,10 +29,24 @@ column  value           format a30
 --
 --
 --
-select sysdate, name from v$database;
+select d.name || ',' ||
+       v.banner || ',' ||
+       to_char(sysdate, 'YYYY-MM-DD') || ',' ||
+       u.username|| ',' ||
+       null || ',' ||
+       u.password_versions || ',' ||
+       u.profile || ',' ||
+       u.account_status || ',' ||
+       to_char(u.created, 'YYYY-MM-DD') as "csv data"
+  from dba_users u
+  join v$database d on 1=1
+  join v$version v on v.banner like 'Oracle%'
+ where u.password_versions = '10G '
+   and u.account_status = 'OPEN'
+   and u.profile not like 'ND_USR%'
+ order by u.username;
 
 exit;
 -- ---------------------------------------------------------------------
 --                                             E N D   O F   S C R I P T
 -- ---------------------------------------------------------------------
-

@@ -168,5 +168,7 @@ echo
 echo "----------------------------------------"
 echo " End time ......... : " `date`
 echo " Output directory . : $OMR_DISPLAY_DIR"
-ls -lht $OMR_OUTPUT_DIR
+echo " Output file count. : `ls -lht $OMR_OUTPUT_DIR | wc -l`"
+echo " Output errors .... : $OMR_DISPLAY_DIR/omr.msg"
+echo " Output combined .. : $OMR_DISPLAY_DIR/omr.dat"
 echo "----------------------------------------"
